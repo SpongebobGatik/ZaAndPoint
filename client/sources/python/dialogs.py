@@ -585,8 +585,11 @@ class UpdateDialog(BaseDialog):
                     updated_row["discipline_id_new"] = updated_row["discipline_id"]
                     updated_row["discipline_id"] = self.data[self.row_index].get("discipline_id", None)
                 elif self.table_type == "user" and "password" in updated_row:
-                    updated_row["password_hash"] = self.hash_data(updated_row["password"])
-                    del updated_row["password"]
+                    if updated_row["password"]:  # Проверка на пустой пароль
+                        updated_row["password_hash"] = self.hash_data(updated_row["password"])
+                        del updated_row["password"]
+                    else:
+                        updated_row["password_hash"] = ""
                 return self.row_index, updated_row
         except ValueError:
             pass
