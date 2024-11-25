@@ -15,7 +15,7 @@ from PySide6.QtGui import (
 )
 from PySide6.QtCore import Qt
 import hashlib
-from sources.python.config import WINDOW_STYLES, TABLES, PATHS
+from sources.python.config import WINDOW_STYLES, TABLES, PATHS, COLUMN_TITLES
 
 class BaseDialog(QDialog):
 
@@ -40,8 +40,12 @@ class BaseDialog(QDialog):
         """Фабричный метод для создания полей ввода."""
         
         layout = QVBoxLayout()
-        label = QLabel(label_text)
+        
+        # Получаем русское название из COLUMN_TITLES
+        russian_label_text = COLUMN_TITLES.get(label_text, label_text)
+        label = QLabel(russian_label_text)  # Используем русское название
         layout.addWidget(label)
+        
         if items is not None:
             input_field = QComboBox()
             if isinstance(items[0], dict):
@@ -58,6 +62,7 @@ class BaseDialog(QDialog):
                 input_field.setEchoMode(QLineEdit.Password)
             if validator:
                 input_field.setValidator(validator)
+        
         layout.addWidget(input_field)
         self.inputs[data_key or label_text] = input_field
         return layout

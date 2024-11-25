@@ -17,7 +17,7 @@ from PySide6.QtGui import QIcon, QPixmap, QPalette, QBrush
 from PySide6.QtCore import Qt, QSize
 import pandas as pd
 import requests
-from sources.python.config import PATHS, WINDOW_STYLES, ENDPOINTS, TABLES
+from sources.python.config import PATHS, WINDOW_STYLES, ENDPOINTS, TABLES, COLUMN_TITLES
 from sources.python.dialogs import AddDialog, AddTempDialog, DeleteDialog, UpdateDialog, SelectSemesterDialog, SelectGroupDialog
 
 class TableWindow(QMainWindow):
@@ -56,7 +56,7 @@ class TableWindow(QMainWindow):
         self.table = QTableWidget()
         self.table.setRowCount(len(data))
         self.table.setColumnCount(len(columns))
-        self.table.setHorizontalHeaderLabels(columns)
+        self.table.setHorizontalHeaderLabels([COLUMN_TITLES.get(col, col) for col in columns])
         for row, item in enumerate(data):
             for col, key in enumerate(columns):
                 cell = QTableWidgetItem(str(item.get(key, "")))

@@ -58,7 +58,7 @@ class UpdateDialog(QDialog):
         }
         print(data)
         try:
-            response = requests.post("http://localhost/assessment/update_con.php", json=data)
+            response = requests.post(ENDPOINTS['update_info'], json=data)
             print(response.content)
             if response.status_code == 200:
                 if response.content:
