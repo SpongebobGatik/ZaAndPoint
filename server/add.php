@@ -542,8 +542,6 @@ elseif ($data['command'] === 'update_user') {
     elseif ($data['command'] === 'delete_tdis') {
 	$teacher_id = protect($db, $data['data']['teacher_id']);
 	$discipline_id = protect($db, $data['data']['discipline_id']);
-	$teacher_id_new = protect($db, $data['data']['teacher_id_new']);
-	$discipline_id_new = protect($db, $data['data']['discipline_id_new']);
 
     $query = "DELETE FROM teacherdiscipline WHERE teacher_id = ? AND discipline_id = ?";
         $stmt = $db->prepare($query);
