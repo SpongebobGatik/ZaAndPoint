@@ -287,8 +287,17 @@ CREATE TRIGGER after_delete_user
 AFTER DELETE ON User
 FOR EACH ROW
 BEGIN
-    DELETE FROM Student WHERE student_id = OLD.user_id;
-    DELETE FROM Teacher WHERE teacher_id = OLD.user_id;
+    -- Установить статус "неактивный" для студента
+    UPDATE Student 
+    SET full_name = CONCAT(full_name, ' (удалён)'), email = NULL, phone = NULL 
+    WHERE student_id = OLD.user_id;
+
+    -- Установить статус "неактивный" для учителя
+    UPDATE Teacher 
+    SET full_name = CONCAT(full_name, ' (удалён)'), email = NULL, phone = NULL 
+    WHERE teacher_id = OLD.user_id;
+
+    -- Удалить секретаря, если он есть
     DELETE FROM Secretary WHERE secretary_id = OLD.user_id;
 END//
 
