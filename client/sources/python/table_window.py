@@ -1,20 +1,20 @@
 from PySide6.QtWidgets import (
-    QMainWindow, 
-    QTableWidget, 
-    QTableWidgetItem, 
-    QVBoxLayout, 
-    QHBoxLayout, 
-    QPushButton, 
-    QFrame, 
-    QHeaderView, 
+    QMainWindow,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+    QHBoxLayout,
+    QPushButton,
+    QFrame,
+    QHeaderView,
     QFileDialog,
     QSpacerItem,
     QSizePolicy,
     QWidget,
     QLabel
 )
-from PySide6.QtGui import QIcon, QPixmap, QPalette, QBrush
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtGui import QIcon, QPixmap, QPalette, QBrush, QFont, QPainter
+from PySide6.QtCore import Qt, QSize, QEvent, QRect
 import pandas as pd
 import requests
 from sources.python.config import PATHS, WINDOW_STYLES, ENDPOINTS, TABLES, COLUMN_TITLES
@@ -63,8 +63,9 @@ class TableWindow(QMainWindow):
                 cell.setFlags(cell.flags() & ~Qt.ItemIsEditable)
                 self.table.setItem(row, col, cell)
         self.table.setStyleSheet(WINDOW_STYLES["table"])
-        self.table.horizontalHeader().setStretchLastSection(True)
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.scale_factor = 1.0
+        self.min_font_size = 5
+        self.update_table_scale()
         side_panel = self.create_side_panel(refresh_button)
         main_layout = QHBoxLayout()
         main_layout.addWidget(self.table)
@@ -72,7 +73,105 @@ class TableWindow(QMainWindow):
         container = QWidget()
         container.setLayout(main_layout)
         self.setCentralWidget(container)
+        self.table.viewport().installEventFilter(self)
 
+    def resizeEvent(self, event):
+
+        """Обработчик события изменения размера окна."""
+
+        super().resizeEvent(event)
+        self.adjust_scale_to_window()
+
+    def adjust_scale_to_window(self):
+
+        """Настраивает масштаб таблицы в зависимости от размера окна."""
+
+        window_width = self.centralWidget().width()  
+        window_height = self.centralWidget().height()  
+        side_panel_width = 335
+        available_width = window_width - side_panel_width
+        max_col_width = available_width / len(self.columns) if len(self.columns) > 0 else 0
+        max_row_height = window_height / len(self.data) if len(self.data) > 0 else 1
+        self.scale_factor = min(max_col_width / 100, max_row_height / 30)
+        self.update_table_scale()
+
+    def eventFilter(self, source, event):
+        if event.type() == QEvent.Wheel and source is self.table.viewport():
+            if event.modifiers() & Qt.ControlModifier:
+                if event.angleDelta().y() > 0:
+                    self.set_scale(self.scale_factor * 1.1)
+                else:
+                    self.set_scale(self.scale_factor / 1.1)
+                return True
+        return super().eventFilter(source, event)
+
+    def set_scale(self, scale):
+
+        """Устанавливает масштаб таблицы."""
+        
+        self.scale_factor = max(0.1, scale)
+        min_scale_factor = self.min_font_size / 8
+        if self.scale_factor < min_scale_factor:
+            self.scale_factor = min_scale_factor
+        self.update_table_scale()
+
+    def update_table_scale(self):
+
+        """Обновляет масштаб таблицы, увеличивая содержимое без изменения размера шрифта."""
+        
+        font = QFont()
+        font.setPointSize(12)  # Устанавливаем фиксированный размер шрифта для ячеек
+        self.table.setFont(font)
+        row_height = 30  # Минимальная высота строки
+        for row in range(self.table.rowCount()):
+            self.table.setRowHeight(row, int(row_height * self.scale_factor))  # Увеличиваем высоту строки
+        col_width = 100  # Фиксированная ширина колонки
+        min_col_width = 100  # Минимальная ширина колонки
+        if self.table.rowCount() == 0:
+            min_col_width = 250
+        for col in range(self.table.columnCount()):
+            new_width = int(col_width * self.scale_factor)
+            self.table.setColumnWidth(col, max(new_width, min_col_width))
+        max_date_font_size = 24
+        for row in range(self.table.rowCount()):
+            for col in range(self.table.columnCount()):
+                item = self.table.item(row, col)
+                if item is not None:
+                    item.setSizeHint(QSize(max(int(col_width * self.scale_factor), min_col_width), int(row_height * self.scale_factor)))
+                    font = item.font()
+                    date_font_size = int(8 * self.scale_factor)
+                    if date_font_size < self.min_font_size:
+                        date_font_size = self.min_font_size
+                    elif date_font_size > max_date_font_size:
+                        date_font_size = max_date_font_size
+                    font.setPointSize(date_font_size)  # Увеличиваем размер шрифта
+                    item.setFont(font)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
+        header_height = 100
+        for col in range(self.table.columnCount()):
+            self.table.horizontalHeader().setFixedHeight(header_height)
+        min_header_font_size = 12
+        max_header_font_size = 24
+        header_font_size = int(4 * self.scale_factor)
+        if header_font_size < min_header_font_size:
+            header_font_size = min_header_font_size
+        if header_font_size > max_header_font_size:
+            header_font_size = max_header_font_size
+        header_font = QFont()
+        header_font.setPointSize(header_font_size)
+        self.table.horizontalHeader().setFont(header_font)
+
+        min_vertical_header_font_size = 12
+        max_vertical_header_font_size = 24
+        vertical_header_font_size = int(4 * self.scale_factor)
+        if vertical_header_font_size < min_vertical_header_font_size:
+            vertical_header_font_size = min_vertical_header_font_size
+        if vertical_header_font_size > max_vertical_header_font_size:
+            vertical_header_font_size = max_vertical_header_font_size
+        vertical_header_font = QFont()
+        vertical_header_font.setPointSize(vertical_header_font_size)  # Устанавливаем шрифт для вертикальных заголовков
+        self.table.verticalHeader().setFont(vertical_header_font)  # Устанавливаем шрифт для вертикальных заголовков
+    
     def create_side_panel(self, refresh_button):
 
         """Создает боковую панель с кнопками."""
@@ -208,6 +307,7 @@ class TableWindow(QMainWindow):
         if dialog.exec():
             selected_semester = dialog.selected_semester
             self.parent_app.load_semester_grades(selected_semester)
+            self.adjust_scale_to_window()
 
     def open_select_group_dialog(self):
 
@@ -217,6 +317,7 @@ class TableWindow(QMainWindow):
         if dialog.exec():
             selected_direction, selected_group = dialog.selected_direction, dialog.selected_group
             self.parent_app.load_group_students(selected_direction, selected_group)
+            self.adjust_scale_to_window()
 
     def closeEvent(self, event):
 

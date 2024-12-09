@@ -20,11 +20,6 @@ from sources.python.config import (
 from sources.python.base_window import BaseWindow
 from sources.python.register import RegisterWindow
 
-class ClearableLineEdit(QLineEdit):
-    def focusInEvent(self, event):
-        self.clear()
-        super().focusInEvent(event)
-
 class LoginWindow(QWidget, BaseWindow):
     def __init__(self):
         super().__init__()
@@ -36,11 +31,11 @@ class LoginWindow(QWidget, BaseWindow):
         self.resize(SIZES["login_window"]["min_width"],
                             SIZES["login_window"]["min_height"])
         layout = QVBoxLayout()
-        self.username_input = ClearableLineEdit()
+        self.username_input = QLineEdit()
         self.username_input.setFont(QFont(FONTS["default"]["family"], FONTS["default"]["size"]))
         self.username_input.setPlaceholderText("Имя пользователя")
         layout.addWidget(self.username_input)
-        self.password_input = ClearableLineEdit()
+        self.password_input = QLineEdit()
         self.password_input.setFont(QFont(FONTS["default"]["family"], FONTS["default"]["size"]))
         self.password_input.setEchoMode(QLineEdit.Password)
         self.password_input.setPlaceholderText("Пароль")
